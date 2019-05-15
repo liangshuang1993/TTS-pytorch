@@ -1,0 +1,5 @@
+#!/bin/bash
+pip3 install https://download.pytorch.org/whl/cu100/torch-1.0.1.post2-cp36-cp36m-linux_x86_64.whl
+yes | apt-get install espeak 
+python3 setup.py develop
+python3 train.py --config_path config_cluster.json  --data_path ${SHARED_DIR}/data/Blizzard/Nancy/ --debug true
