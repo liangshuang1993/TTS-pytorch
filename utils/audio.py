@@ -203,12 +203,15 @@ class AudioProcessor(object):
         return len(wav)
 
     def trim_silence(self, wav):
-        """ Trim silent parts with a threshold and 0.1 sec margin """
-        margin = int(self.sample_rate * 0.1)
-        wav = wav[margin:-margin]
-        return librosa.effects.trim(
-            wav, top_db=40, frame_length=1024, hop_length=256)[0]
-
+        # """ Trim silent parts with a threshold and 0.1 sec margin """
+        # margin = int(self.sample_rate * 0.1)
+        # wav = wav[margin:-margin]
+        # return librosa.effects.trim(
+        #     wav, top_db=40, frame_length=1024, hop_length=256)[0]
+        return librosa.effects.trim(wav, top_db=40,
+                                    frame_length=2048,
+                                    hop_length=512)[0]
+                                    
     # WaveRNN repo specific functions
     # def mulaw_encode(self, wav, qc):
     #     mu = qc - 1
