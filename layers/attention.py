@@ -183,8 +183,10 @@ class AttentionRNNCell(nn.Module):
             alpha = (alpha + previous_alpha).mul(alignment)
             # if mask is not None:
             #     alpha.masked_fill_(1 - mask, 0)
-
-            alignment = alpha / alpha.masked_fill_(1 - mask, 0).sum(dim=1).unsqueeze(1)
+            if mask is not None:
+                alignment = alpha / alpha.masked_fill_(1 - mask, 0).sum(dim=1).unsqueeze(1)
+            else:
+                alignment = alpha / alpha.sum(dim=1).unsqueeze(1)
         # Attention context vector
         # (batch, 1, dim)
         # c_i = \sum_{j=1}^{T_x} \alpha_{ij} h_j
