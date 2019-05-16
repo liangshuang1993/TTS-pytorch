@@ -83,7 +83,7 @@ def train(model, criterion, criterion_st, optimizer, optimizer_st, scheduler,
     avg_step_time = 0
     print("\n > Epoch {}/{}".format(epoch, c.epochs), flush=True)
     n_priority_freq = int(
-        3000 / (c.audio['sample_rate'] * 0.5) * c.audio['num_freq'])
+        2000 / (c.audio['sample_rate'] * 0.5) * c.audio['num_freq'])
     if num_gpus > 0:
         batch_n_iter = int(len(data_loader.dataset) / (c.batch_size * num_gpus))
     else:
@@ -202,17 +202,20 @@ def train(model, criterion, criterion_st, optimizer, optimizer_st, scheduler,
                 gt_spec = linear_input[0].data.cpu().numpy()
                 align_img = alignments[0].data.cpu().numpy()
 
-                figures = {
-                    "prediction": plot_spectrogram(const_spec, ap),
-                    "ground_truth": plot_spectrogram(gt_spec, ap),
-                    "alignment": plot_alignment(align_img)
-                }
-                tb_logger.tb_train_figures(current_step, figures)
+                try:
+                    figures = {
+                        "prediction": plot_spectrogram(const_spec, ap),
+                        "ground_truth": plot_spectrogram(gt_spec, ap),
+                        "alignment": plot_alignment(align_img)
+                    }
+                    tb_logger.tb_train_figures(current_step, figures)
 
-                # Sample audio
-                tb_logger.tb_train_audios(
-                    current_step, {'TrainAudio': ap.inv_spectrogram(const_spec.T)},
-                    c.audio["sample_rate"])
+                    # Sample audio
+                    tb_logger.tb_train_audios(
+                        current_step, {'TrainAudio': ap.inv_spectrogram(const_spec.T)},
+                        c.audio["sample_rate"])
+                except Exception as e:
+                    print('add figure and audio failed. skipped!')
 
     avg_linear_loss /= (num_iter + 1)
     avg_mel_loss /= (num_iter + 1)
@@ -330,17 +333,20 @@ def evaluate(model, criterion, criterion_st, ap, current_step, epoch):
                 gt_spec = linear_input[idx].data.cpu().numpy()
                 align_img = alignments[idx].data.cpu().numpy()
 
-                eval_figures = {
-                    "prediction": plot_spectrogram(const_spec, ap),
-                    "ground_truth": plot_spectrogram(gt_spec, ap),
-                    "alignment": plot_alignment(align_img)
-                }
-                tb_logger.tb_eval_figures(current_step, eval_figures)
+                try:
+                    eval_figures = {
+                        "prediction": plot_spectrogram(const_spec, ap),
+                        "ground_truth": plot_spectrogram(gt_spec, ap),
+                        "alignment": plot_alignment(align_img)
+                    }
+                    tb_logger.tb_eval_figures(current_step, eval_figures)
 
-                # Sample audio
-                tb_logger.tb_eval_audios(
-                    current_step, {"ValAudio": ap.inv_spectrogram(const_spec.T)},
-                    c.audio["sample_rate"])
+                    # Sample audio
+                    tb_logger.tb_eval_audios(
+                        current_step, {"ValAudio": ap.inv_spectrogram(const_spec.T)},
+                        c.audio["sample_rate"])
+                except Exception as e:
+                    print('add figure and audio failed, skipped!')
 
                 # compute average losses
                 avg_linear_loss /= (num_iter + 1)
@@ -377,8 +383,11 @@ def evaluate(model, criterion, criterion_st, ap, current_step, epoch):
             except:
                 print(" !! Error creating Test Sentence -", idx)
                 traceback.print_exc()
-        tb_logger.tb_test_audios(current_step, test_audios, c.audio['sample_rate'])
-        tb_logger.tb_test_figures(current_step, test_figures)
+        try:
+            tb_logger.tb_test_audios(current_step, test_audios, c.audio['sample_rate'])
+            tb_logger.tb_test_figures(current_step, test_figures)
+        except Exception as e:
+            print('add figure and audio failed, skipped!')
     return avg_linear_loss
 
 
@@ -497,7 +506,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--debug',
         type=bool,
-        default=False,
+        default=True,
         help='Do not verify commit integrity to run training.')
     parser.add_argument(
         '--data_path',
