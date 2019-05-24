@@ -408,7 +408,7 @@ class Decoder(nn.Module):
         
         # pretrain decoder
         if self.pretrain_decoder:
-            current_context_vec = torch.zeros(current_context_vec.shape)
+            current_context_vec = current_context_vec.data.new(current_context_vec).zero_()
             
         while True:
             if t > 0:
@@ -434,7 +434,7 @@ class Decoder(nn.Module):
 
             # pretrain decoder
             if self.pretrain_decoder:
-                current_context_vec = torch.zeros(current_context_vec.shape)
+                current_context_vec = current_context_vec.data.new(current_context_vec).zero_()
 
             # Concat RNN output and attention context vector
             decoder_input = self.project_to_decoder_in(

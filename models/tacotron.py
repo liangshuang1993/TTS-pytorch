@@ -34,7 +34,7 @@ class Tacotron(nn.Module):
     def forward(self, characters, mel_specs=None, mask=None):
         B = characters.size(0)
         if self.pretrain_decoder:
-            encoder_outputs = torch.zeros((characters.shape[0], characters.shape[1], 256))
+            encoder_outputs = torch.zeros((characters.shape[0], characters.shape[1], 256)).cuda()
         else:
             inputs = self.embedding(characters)
             # batch x time x dim
