@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import re
-import phonemizer
-from phonemizer.phonemize import phonemize
 from utils.text import cleaners
 from utils.text.symbols import symbols, phonemes, _phoneme_punctuations
 
@@ -24,6 +22,8 @@ def text2phone(text, language):
     '''
     Convert graphemes to phonemes.
     '''
+    import phonemizer
+    from phonemizer.phonemize import phonemize
     seperator = phonemizer.separator.Separator(' |', '', '|')
     #try:
     punctuations = re.findall(pat, text)

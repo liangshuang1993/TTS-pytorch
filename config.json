@@ -30,7 +30,7 @@
     },
 
     "embedding_size": 256,  // Character embedding vector length. You don't need to change it in general.
-    "text_cleaner": "phoneme_cleaners",
+    "text_cleaner": "basic_cleaners",
     "epochs": 1000,         // total number of epochs to train.
     "lr": 0.001,            // Initial learning rate. If Noam decay is active, maximum learning rate.
     "lr_decay": false,      // if true, Noam learning rate decaying is applied through training.
