@@ -301,7 +301,7 @@ class Decoder(nn.Module):
         memory_size (int): size of the past window. if <= 0 memory_size = r
     """
 
-    def __init__(self, in_features, memory_dim, r, memory_size, attn_windowing):
+    def __init__(self, in_features, memory_dim, r, memory_size, attn_windowing, pretrain_decoder=False):
         super(Decoder, self).__init__()
         self.r = r
         self.in_features = in_features
@@ -331,6 +331,7 @@ class Decoder(nn.Module):
         self.decoder_rnn_inits = nn.Embedding(2, 256)
         self.stopnet = StopNet(256 + memory_dim * r)
         # self.init_layers()
+        self.pretrain_decoder = pretrain_decoder
 
     def init_layers(self):
         torch.nn.init.xavier_uniform_(
@@ -404,6 +405,11 @@ class Decoder(nn.Module):
         t = 0
         memory_input, attention_rnn_hidden, decoder_rnn_hiddens,\
             current_context_vec, attention, attention_cum = self._init_states(inputs)
+        
+        # pretrain decoder
+        if self.pretrain_decoder:
+            current_context_vec = torch.zeros(current_context_vec.shape)
+            
         while True:
             if t > 0:
                 if memory is None:
@@ -425,6 +431,11 @@ class Decoder(nn.Module):
                 inputs, attention_cat, mask, t)
             del attention_cat
             attention_cum += attention
+
+            # pretrain decoder
+            if self.pretrain_decoder:
+                current_context_vec = torch.zeros(current_context_vec.shape)
+
             # Concat RNN output and attention context vector
             decoder_input = self.project_to_decoder_in(
                 torch.cat((attention_rnn_hidden, current_context_vec), -1))

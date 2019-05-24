@@ -403,7 +403,8 @@ def main(args):
         linear_dim=ap.num_freq,
         mel_dim=ap.num_mels,
         r=c.r,
-        memory_size=c.memory_size)
+        memory_size=c.memory_size, 
+        c.pretrain_decoder)
 
     optimizer = optim.Adam(model.parameters(), lr=c.lr, weight_decay=0)
     optimizer_st = optim.Adam(

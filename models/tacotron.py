@@ -14,7 +14,8 @@ class Tacotron(nn.Module):
                  r=5,
                  padding_idx=None, 
                  memory_size=5,
-                 attn_windowing=False):
+                 attn_windowing=False, 
+                 pretrain_decoder=False):
         super(Tacotron, self).__init__()
         self.r = r
         self.mel_dim = mel_dim
@@ -23,17 +24,21 @@ class Tacotron(nn.Module):
             num_chars, embedding_dim, padding_idx=padding_idx)
         self.embedding.weight.data.normal_(0, 0.3)
         self.encoder = Encoder(embedding_dim)
-        self.decoder = Decoder(256, mel_dim, r, memory_size, attn_windowing)
+        self.decoder = Decoder(256, mel_dim, r, memory_size, attn_windowing, pretrain_decoder)
         self.postnet = PostCBHG(mel_dim)
         self.last_linear = nn.Sequential(
             nn.Linear(self.postnet.cbhg.gru_features * 2, linear_dim),
             nn.Sigmoid())
+        self.pretrain_decoder = pretrain_decoder
 
     def forward(self, characters, mel_specs=None, mask=None):
         B = characters.size(0)
-        inputs = self.embedding(characters)
-        # batch x time x dim
-        encoder_outputs = self.encoder(inputs)
+        if self.pretrain_decoder:
+            encoder_outputs = torch.zeros((characters.shape[0], characters.shape[1], 256))
+        else:
+            inputs = self.embedding(characters)
+            # batch x time x dim
+            encoder_outputs = self.encoder(inputs)
         # batch x time x dim*r
         mel_outputs, alignments, stop_tokens = self.decoder(
             encoder_outputs, mel_specs, mask)
