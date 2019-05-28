@@ -426,6 +426,30 @@ def main(args):
         model_dict.update(pretrained_dict)
         # 3. load the new state dict
         model.load_state_dict(model_dict)
+
+        # if restore decoder model
+        if c.restore_decoder_path:
+            # When pretrain decoder, encoder weights, attention weights(including attention rnn) won't change.
+            # So when use a original model and a decoder-only model, we should restore encoder and attention from first model, 
+            # restore decoder module from the second model.
+            encoder_layer_dict = {
+                k: v
+                for k, v in checkpoint['model'].items() if k in model_dict and 'encoder' in k or 'embedding' in k
+            }
+            attention_layer_dict = {
+                k: v
+                for k, v in checkpoint['model'].items() if k in model_dict and 'attention_rnn' in k
+            }
+
+            decoder_checkpoint = torch.load(c.restore_decoder_path)
+            decoder_layer_dict = {
+                k: v
+                for k, v in decoder_checkpoint['model'].items() if k in model_dict and k not in encoder_layer_dict and k not in attention_layer_dict
+            }
+
+            model_dict.update(decoder_layer_dict)
+
+
         if use_cuda:
             model = model.cuda()
             criterion.cuda()
