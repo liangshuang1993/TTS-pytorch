@@ -50,6 +50,7 @@
     "batch_group_size": 8,  //Number of batches to shuffle after bucketing.
 
     "pretrain_decoder": true,
+    "restore_decoder_path": "", // Use this decoder model to restore
     "run_eval": false,
     "test_delay_epochs": 100,  //Until attention is aligned, testing only wastes computation time.
     "data_path": "/media/erogol/data_ssd/Data/LJSpeech-1.1",  // DATASET-RELATED: can overwritten from command argument
