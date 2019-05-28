@@ -416,6 +416,7 @@ def main(args):
     if args.restore_path:
         checkpoint = torch.load(args.restore_path)
         model.load_state_dict(checkpoint['model'])
+        model_dict = model.state_dict()
         # Partial initialization: if there is a mismatch with new and old layer, it is skipped.
         # 1. filter out unnecessary keys
         pretrained_dict = {
