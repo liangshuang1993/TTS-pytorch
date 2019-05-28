@@ -414,44 +414,30 @@ def main(args):
 
     if args.restore_path:
         checkpoint = torch.load(args.restore_path)
-        try:
-            model.load_state_dict(checkpoint['model'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
-        except:
-            print(" > Partial model initialization.")
-            partial_init_flag = True
-            model_dict = model.state_dict()
-            # Partial initialization: if there is a mismatch with new and old layer, it is skipped.
-            # 1. filter out unnecessary keys
-            pretrained_dict = {
-                k: v
-                for k, v in checkpoint['model'].items() if k in model_dict
-            }
-            # 2. filter out different size layers
-            pretrained_dict = {
-                k: v
-                for k, v in pretrained_dict.items()
-                if v.numel() == model_dict[k].numel()
-            }
-            # 3. overwrite entries in the existing state dict
-            model_dict.update(pretrained_dict)
-            # 4. load the new state dict
-            model.load_state_dict(model_dict)
-            print(" | > {} / {} layers are initialized".format(
-                len(pretrained_dict), len(model_dict)))
+        model.load_state_dict(checkpoint['model'])
+        # Partial initialization: if there is a mismatch with new and old layer, it is skipped.
+        # 1. filter out unnecessary keys
+        pretrained_dict = {
+            k: v
+            for k, v in checkpoint['model'].items() if k in model_dict
+        }
+        # 2. overwrite entries in the existing state dict
+        model_dict.update(pretrained_dict)
+        # 3. load the new state dict
+        model.load_state_dict(model_dict)
         if use_cuda:
             model = model.cuda()
             criterion.cuda()
             criterion_st.cuda()
-        for group in optimizer.param_groups:
-            group['lr'] = c.lr
+        optimizer.load_state_dict(checkpoint['optimizer'])
         print(
             " > Model restored from step %d" % checkpoint['step'], flush=True)
-        start_epoch = checkpoint['epoch']
+        start_epoch = checkpoint['epoch'] 
         best_loss = checkpoint['linear_loss']
         args.restore_step = checkpoint['step']
     else:
         args.restore_step = 0
+        print("\n > Starting a new training", flush=True)
         if use_cuda:
             model = model.cuda()
             criterion.cuda()
