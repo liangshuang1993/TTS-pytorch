@@ -179,7 +179,7 @@ class AttentionRNNCell(nn.Module):
         # forward attention
         if self.forward_attention:
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")            
-            previous_alpha = torch.cat(torch.zeros(alpha.shape[0], 1).to(device), alpha[:, :-1], 1)
+            previous_alpha = torch.cat((torch.zeros(alpha.shape[0], 1).to(device), alpha[:, :-1]), 1)
             alpha = (alpha + previous_alpha).mul(alignment)
             # if mask is not None:
             #     alpha.masked_fill_(1 - mask, 0)
