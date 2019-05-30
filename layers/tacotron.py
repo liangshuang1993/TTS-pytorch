@@ -1,6 +1,7 @@
 # coding: utf-8
 import torch
 from torch import nn
+import numpy as np
 from .attention import AttentionRNNCell
 
 
@@ -329,7 +330,7 @@ class Decoder(nn.Module):
         self.attention_rnn_init = nn.Embedding(1, 256)
         self.memory_init = nn.Embedding(1, self.memory_size * memory_dim)
         self.decoder_rnn_inits = nn.Embedding(2, 256)
-        self.stopnet = StopNet(256 + memory_dim * r)
+        self.stopnet = StopNet(256 + memory_dim * r + 1)
         # self.init_layers()
 
     def init_layers(self):
@@ -423,6 +424,14 @@ class Decoder(nn.Module):
             attention_rnn_hidden, current_context_vec, attention = self.attention_rnn(
                 processed_memory, current_context_vec, attention_rnn_hidden,
                 inputs, attention_cat, mask, t)
+
+            max_attention_idx = torch.argmax(attention, 1).cpu().numpy()
+            pos_seq = [np.array([0] * (idx + 1)) for idx in max_attention_idx]
+            pos_seq = [np.pad(pos, (0, inputs.shape[1] - len(pos)), mode='constant', constant_values=1) for pos in pos_seq]
+            pos_seq = torch.LongTensor(np.stack(pos_seq)).cuda()
+            pos_seq = pos_seq * mask.long() if mask is not None else pos_seq
+            distance = torch.sum(pos_seq, dim=1).unsqueeze(1).float()                       
+
             del attention_cat
             attention_cum += attention
             # Concat RNN output and attention context vector
@@ -440,7 +449,7 @@ class Decoder(nn.Module):
             output = self.proj_to_mel(decoder_output)
             output = torch.sigmoid(output)
             # predict stop token
-            stopnet_input = torch.cat([decoder_output, output], -1)
+            stopnet_input = torch.cat([decoder_output, output, distance], -1)
             del decoder_output
             stop_token = self.stopnet(stopnet_input)
             del stopnet_input
