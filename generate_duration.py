@@ -88,7 +88,7 @@ if __name__ == '__main__':
     ap = AudioProcessor(**c.audio)
     use_cuda = True
     
-    data_loader = setup_loader(c, is_val=True)
+    data_loader = setup_loader(c, is_val=False)
     num_chars = len(phonemes) if c.use_phonemes else len(symbols)
     
     model = Tacotron(
@@ -98,7 +98,9 @@ if __name__ == '__main__':
         mel_dim=ap.num_mels,
         r=c.r,
         memory_size=c.memory_size)
-    model.eval()
+
+    checkpoint = torch.load(MODEL_PATH)
+    model.load_state_dict(checkpoint['model'])
 
     with torch.no_grad():
         if data_loader is not None:
