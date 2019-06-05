@@ -13,18 +13,20 @@ import librosa
 from models.tacotron import Tacotron 
 from utils.audio import AudioProcessor
 from utils.text.symbols import phonemes, symbols
+from utils.generic_utils import load_config
+from notebooks.synthesis import create_speech
 
 parser = argparse.ArgumentParser(description='synthesis parameters')
-parser.add_argument('--root', helper='Please input root path', required=True)
-parser.add_argument('--step', helper='Please input step', required=False)
-parser.add_argument('--text', helper='Please input text file', default='pinyin.txt')
+parser.add_argument('--root', help='Please input root path', required=True)
+parser.add_argument('--step', help='Please input step', required=False)
+parser.add_argument('--text', help='Please input text file', default='pinyin.txt')
 args = parser.parse_args()
 
 
-def text2audio(texts, model, CONFIG, use_cuda, ap):
+def text2audio(texts, model, CONFIG, use_cuda, ap, save_alignment=False):
     wavs = []
-    wavs, alignments, spectrograms, stop_tokens = create_speech(mode, texts, CONFIG, use_cuda, ap)
-    return wavs
+    wavs, alignments, spectrograms, stop_tokens = create_speech(model, texts, CONFIG, use_cuda, ap)
+    return wavs, alignments
 
 
 ROOT_PATH = args.root
@@ -69,6 +71,25 @@ batch_size = 32
 
 for n in range(math.ceil(len(texts) / batch_size)):
     batch_texts = texts[n: max(n + batch_size, len(texts))]
-    wavs = text2audio(texts, model, CONFIG, use_cuda, ap)
+    wavs, alignments = text2audio(texts, model, CONFIG, use_cuda, ap)
     for i, wav in enumerate(wavs):
-        ap.save_wav(wav, os.path.join(OUT_FOLDER, 'CommonVoice_{}_{}_{}.wav'.format(args.step, n, i)))
+        ap.save_wav(wav, os.path.join(OUT_FOLDER, 'CommonVoice_{}_{}.wav'.format(args.step, n * batch_size + i)))
+
+        if save_alignment:
+        # alignments can be used to train FastSpeech
+            alignment = alignments[i]
+            duration = get_duration(alignment)
+            print(duration)
+            np.save(os.path.join(OUT_FOLDER, 'duration', 'duration_{}.npy'.format(n * batch_size + i)), duration)
+            
+
+def get_duration(alignment):
+    t, s = alignment.shape # t is phoneme's length, s is spectrogram's length
+    d = np.zeros(t)
+    max_index = np.argmax(alignment, axis=0)
+    print(max_index.shape) # max_index's length should be alignment.shape[0]
+
+    for index in max_index:
+        d[index] += 1
+    
+    return d

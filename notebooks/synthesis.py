@@ -2,7 +2,8 @@ import io
 import librosa
 import torch
 import numpy as np
-from utils.text import text_to_sequence, prepare_data
+from utils.text import text_to_sequence
+from utils.data import prepare_data
 from matplotlib import pylab as plt
 
 hop_length = 250
@@ -10,13 +11,13 @@ hop_length = 250
 
 def create_speech(m, s, CONFIG, use_cuda, ap):
     text_cleaner = [CONFIG.text_cleaner]
-    texts = [np.asarray(text_to_sequence(text, [self.cleaners]), dtype=np.int32) for text in texts]
+    texts = [np.asarray(text_to_sequence(text, text_cleaner), dtype=np.int32) for text in s]
     texts = prepare_data(texts).astype(np.int32)
     
     texts = torch.LongTensor(texts)
     if use_cuda:
         texts = texts.cuda()
-    mel_out, linear_out, alignments, stop_tokens = m.forward(texts.long())
+    mel_out, linear_outs, alignments, stop_tokens = m.forward(texts.long())
     linear_outs = [linear_out.data.cpu().numpy() for linear_out in linear_outs]
     alignments = [alignment_.cpu().data.numpy() for alignment_ in alignments]
     specs = [ap._denormalize(linear_out) for linear_out in linear_outs]
@@ -49,4 +50,4 @@ def visualize(alignment, spectrogram, stop_tokens, CONFIG):
         x_axis="time",
         y_axis="linear")
     plt.xlabel("Time", fontsize=label_fontsize)
-plt.ylabel("Hz", fontsize=label_fontsize)
+    plt.ylabel("Hz", fontsize=label_fontsize)

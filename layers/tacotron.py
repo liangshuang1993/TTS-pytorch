@@ -453,8 +453,8 @@ class Decoder(nn.Module):
                 if t >= T_decoder:
                     break
             else:
-                if t > inputs.shape[1] / 4 and (stop_token > 0.6 or
-                                                attention[:, -1].item() > 0.6):
+                if t > inputs.shape[1] / 4 and (torch.min(stop_token) > 0.6 or
+                                                torch.min(attention[:, -1]).item() > 0.6):
                     break
                 elif t > self.max_decoder_steps:
                     print("   | > Decoder stopped with 'max_decoder_steps")

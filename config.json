@@ -51,8 +51,8 @@
 
     "run_eval": false,
     "test_delay_epochs": 100,  //Until attention is aligned, testing only wastes computation time.
-    "data_path": "/media/erogol/data_ssd/Data/LJSpeech-1.1",  // DATASET-RELATED: can overwritten from command argument
-    "meta_file_train": "metadata_train.csv",      // DATASET-RELATED: metafile for training dataloader.
+    "data_path": "/nfsc/data_collection/biaobei_female",  // DATASET-RELATED: can overwritten from command argument
+    "meta_file_train": "metadata.txtv",      // DATASET-RELATED: metafile for training dataloader.
     "meta_file_val": "metadata_val.csv",    // DATASET-RELATED: metafile for evaluation dataloader.
     "dataset": "common",      // DATASET-RELATED: one of TTS.dataset.preprocessors depending on your target dataset. Use "tts_cache" for pre-computed dataset by extract_features.py
     "min_seq_len": 0,       // DATASET-RELATED: minimum text length to use in training
