@@ -2,6 +2,7 @@ import os
 import numpy as np
 import time
 import torch
+import argparse
 
 from train import setup_loader
 from utils.text import phonemes, symbols
@@ -24,7 +25,24 @@ def get_duration(alignment):
 
 if __name__ == '__main__':
     # use ground truth mel to get alignment
-    c = load_config(args.config_path)
+
+    parser = argparse.ArgumentParser(description='synthesis parameters')
+    parser.add_argument('--root', help='Please input root path', required=True)
+    parser.add_argument('--step', help='Please input step', required=False)
+
+    ROOT_PATH = args.root
+    MODEL_PATH_TMP = ROOT_PATH + '/checkpoint_{}.pth.tar'
+
+    if args.step is None:
+        MODEL_PATH = ROOT_PATH + 'best_model.pth.tar'
+    else:
+        MODEL_PATH = MODEL_PATH_TMP.format(args.step)
+
+    print(MODEL_PATH)
+    CONFIG_PATH = ROOT_PATH + '/config.json'
+    OUT_FOLDER = ROOT_PATH + '/test/'
+
+    c = load_config(CONFIG_PATH)
     ap = AudioProcessor(**c.audio)
     
     data_loader = setup_loader(is_val=True)
@@ -40,37 +58,37 @@ if __name__ == '__main__':
     model.eval()
 
     with torch.no_grad():
-    if data_loader is not None:
-        for num_iter, data in enumerate(data_loader):
-            print(num_iter)
-            start_time = time.time()
+        if data_loader is not None:
+            for num_iter, data in enumerate(data_loader):
+                print(num_iter)
+                start_time = time.time()
 
-            # setup input data
-            text_input = data[0]
-            text_lengths = data[1]
-            linear_input = data[2]
-            mel_input = data[3]
-            mel_lengths = data[4]
-            stop_targets = data[5]
+                # setup input data
+                text_input = data[0]
+                text_lengths = data[1]
+                linear_input = data[2]
+                mel_input = data[3]
+                mel_lengths = data[4]
+                stop_targets = data[5]
 
-            # set stop targets view, we predict a single stop token per r frames prediction
-            stop_targets = stop_targets.view(text_input.shape[0],
-                                                stop_targets.size(1) // c.r,
-                                                -1)
-            stop_targets = (stop_targets.sum(2) > 0.0).unsqueeze(2).float()
+                # set stop targets view, we predict a single stop token per r frames prediction
+                stop_targets = stop_targets.view(text_input.shape[0],
+                                                    stop_targets.size(1) // c.r,
+                                                    -1)
+                stop_targets = (stop_targets.sum(2) > 0.0).unsqueeze(2).float()
 
-            # dispatch data to GPU
-            if use_cuda:
-                text_input = text_input.cuda()
-                mel_input = mel_input.cuda()
-                mel_lengths = mel_lengths.cuda()
-                linear_input = linear_input.cuda()
-                stop_targets = stop_targets.cuda()
+                # dispatch data to GPU
+                if use_cuda:
+                    text_input = text_input.cuda()
+                    mel_input = mel_input.cuda()
+                    mel_lengths = mel_lengths.cuda()
+                    linear_input = linear_input.cuda()
+                    stop_targets = stop_targets.cuda()
 
-            # forward pass
-            mel_output, linear_output, alignments, stop_tokens =\
-                model.forward(text_input, mel_input)
+                # forward pass
+                mel_output, linear_output, alignments, stop_tokens =\
+                    model.forward(text_input, mel_input)
 
-            for i, alignment in enumerate(alignments):
-                duration = get_duration(alignment)
-                np.save(os.path.join('durations', 'duration-{}.npy'.format(num_iter * c.batch_size + i)), duration)
+                for i, alignment in enumerate(alignments):
+                    duration = get_duration(alignment)
+                    np.save(os.path.join('durations', 'duration-{}.npy'.format(num_iter * c.batch_size + i)), duration)
