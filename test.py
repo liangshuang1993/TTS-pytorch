@@ -14,6 +14,7 @@ from models.tacotron import Tacotron
 from utils.audio import AudioProcessor
 from utils.text.symbols import phonemes, symbols
 from utils.generic_utils import load_config
+from generate_duration import get_duration
 from notebooks.synthesis import create_speech
 
 parser = argparse.ArgumentParser(description='synthesis parameters')
@@ -82,14 +83,3 @@ for n in range(math.ceil(len(texts) / batch_size)):
             print(duration)
             np.save(os.path.join(OUT_FOLDER, 'duration', 'duration_{}.npy'.format(n * batch_size + i)), duration)
             
-
-def get_duration(alignment):
-    t, s = alignment.shape # t is phoneme's length, s is spectrogram's length
-    d = np.zeros(t)
-    max_index = np.argmax(alignment, axis=0)
-    print(max_index.shape) # max_index's length should be alignment.shape[0]
-
-    for index in max_index:
-        d[index] += 1
-    
-    return d
