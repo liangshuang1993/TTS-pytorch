@@ -83,6 +83,8 @@ if __name__ == '__main__':
     print(MODEL_PATH)
     CONFIG_PATH = ROOT_PATH + '/config.json'
     OUT_FOLDER = ROOT_PATH + '/test/'
+    duration_folder = os.path.join(OUT_FOLDER, 'durations')
+    os.makedirs(duration_folder, exist_ok=True)
 
     c = load_config(CONFIG_PATH)
     ap = AudioProcessor(**c.audio)
@@ -101,6 +103,8 @@ if __name__ == '__main__':
 
     checkpoint = torch.load(MODEL_PATH)
     model.load_state_dict(checkpoint['model'])
+    if use_cuda:
+        model.cuda()
 
     with torch.no_grad():
         if data_loader is not None:
@@ -138,4 +142,4 @@ if __name__ == '__main__':
 
                 for i, alignment in enumerate(alignments):
                     duration = get_duration(alignment)
-                    np.save(os.path.join('durations', 'duration-{}.npy'.format(num_iter * c.batch_size + i)), duration)
+                    np.save(os.path.join(duration_folder, 'duration-{}.npy'.format(num_iter * c.batch_size + i)), duration)
