@@ -96,7 +96,9 @@ if __name__ == '__main__':
     CONFIG_PATH = ROOT_PATH + '/config.json'
     OUT_FOLDER = ROOT_PATH + '/test/'
     duration_folder = os.path.join(OUT_FOLDER, 'durations')
+    plot_folder = os.path.join(OUT_FOLDER, 'plot')
     os.makedirs(duration_folder, exist_ok=True)
+    os.makedirs(plot_folder, exist_ok=True)
 
     c = load_config(CONFIG_PATH)
     ap = AudioProcessor(**c.audio)
