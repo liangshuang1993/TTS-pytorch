@@ -2,11 +2,12 @@ import os
 import numpy as np
 import time
 import torch
+from torch.utils.data import DataLoader
 import argparse
 import importlib
 
 from utils.text import phonemes, symbols
-from utils.generic_utils import load_config
+from utils.generic_utils import load_config, sequence_mask
 from utils.audio import AudioProcessor
 from datasets.TTSDataset import MyDataset
 from distribute import DistributedSampler
@@ -15,6 +16,8 @@ from models.tacotron import Tacotron
 
 def setup_loader(c, is_val=False, verbose=False):
     global ap
+    num_gpus = torch.cuda.device_count()
+    
     if is_val and not c.run_eval:
         loader = None
     else:
@@ -83,8 +86,9 @@ if __name__ == '__main__':
 
     c = load_config(CONFIG_PATH)
     ap = AudioProcessor(**c.audio)
+    use_cuda = True
     
-    data_loader = setup_loader(is_val=True)
+    data_loader = setup_loader(c, is_val=True)
     num_chars = len(phonemes) if c.use_phonemes else len(symbols)
     
     model = Tacotron(
@@ -118,15 +122,17 @@ if __name__ == '__main__':
 
                 # dispatch data to GPU
                 if use_cuda:
-                    text_input = text_input.cuda()
-                    mel_input = mel_input.cuda()
-                    mel_lengths = mel_lengths.cuda()
-                    linear_input = linear_input.cuda()
-                    stop_targets = stop_targets.cuda()
+                    text_input = text_input.cuda(non_blocking=True)
+                    text_lengths = text_lengths.cuda(non_blocking=True)
+                    mel_input = mel_input.cuda(non_blocking=True)
+                    mel_lengths = mel_lengths.cuda(non_blocking=True)
+                    linear_input = linear_input.cuda(non_blocking=True)
+                    stop_targets = stop_targets.cuda(non_blocking=True)
+                mask = sequence_mask(text_lengths)
 
                 # forward pass
                 mel_output, linear_output, alignments, stop_tokens =\
-                    model.forward(text_input, mel_input)
+                    model.forward(text_input, mel_input, mask)
 
                 for i, alignment in enumerate(alignments):
                     duration = get_duration(alignment)
