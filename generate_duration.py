@@ -55,13 +55,25 @@ def get_duration(alignment):
     t, s = alignment.shape # t is phoneme's length, s is spectrogram's length
     d = np.zeros(t)
     max_index = np.argmax(alignment, axis=0)
-    print(max_index.shape) # max_index's length should be alignment.shape[0]
+    # print(max_index.shape) # max_index's length should be alignment.shape[0]
 
     for index in max_index:
         d[index] += 1
     
     return d
 
+
+def plot_alignment(alignment, path):
+    label_fontsize = 16
+    plt.figure(figsize=(16, 24))
+
+    plt.subplot(3, 1, 1)
+    plt.imshow(alignment.T, aspect="auto", origin="lower", interpolation=None)
+    plt.xlabel("Decoder timestamp", fontsize=label_fontsize)
+    plt.ylabel("Encoder timestamp", fontsize=label_fontsize)
+    plt.colorbar()
+    plt.savefig(path, format='png')
+    plt.close()
 
 
 if __name__ == '__main__':
@@ -141,5 +153,6 @@ if __name__ == '__main__':
                     model.forward(text_input, mel_input, mask)
 
                 for i, alignment in enumerate(alignments):
+                    plot_alignment(os.path.join(plot_folder, 'alignment-{}.png'.format(num_iter * c.batch_size + i)), alignment)
                     duration = get_duration(alignment)
                     np.save(os.path.join(duration_folder, 'duration-{}.npy'.format(num_iter * c.batch_size + i)), duration)
