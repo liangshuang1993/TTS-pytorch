@@ -5,6 +5,8 @@ import torch
 from torch.utils.data import DataLoader
 import argparse
 import importlib
+from matplotlib import pylab as plt
+
 
 from utils.text import phonemes, symbols
 from utils.generic_utils import load_config, sequence_mask
@@ -63,11 +65,10 @@ def get_duration(alignment):
     return d
 
 
-def plot_alignment(alignment, path):
+def plot_alignment(path, alignment):
     label_fontsize = 16
-    plt.figure(figsize=(16, 24))
+    plt.figure(figsize=(8, 6))
 
-    plt.subplot(3, 1, 1)
     plt.imshow(alignment.T, aspect="auto", origin="lower", interpolation=None)
     plt.xlabel("Decoder timestamp", fontsize=label_fontsize)
     plt.ylabel("Encoder timestamp", fontsize=label_fontsize)
@@ -155,6 +156,7 @@ if __name__ == '__main__':
                     model.forward(text_input, mel_input, mask)
 
                 for i, alignment in enumerate(alignments):
+                    alignment = alignment.data.cpu().numpy()
                     plot_alignment(os.path.join(plot_folder, 'alignment-{}.png'.format(num_iter * c.batch_size + i)), alignment)
-                    duration = get_duration(alignment)
+                    duration = get_duration(alignment.T)
                     np.save(os.path.join(duration_folder, 'duration-{}.npy'.format(num_iter * c.batch_size + i)), duration)
