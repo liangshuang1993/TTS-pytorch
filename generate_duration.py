@@ -134,6 +134,7 @@ if __name__ == '__main__':
                 mel_input = data[3]
                 mel_lengths = data[4]
                 stop_targets = data[5]
+                idxs = data[6]
 
                 # set stop targets view, we predict a single stop token per r frames prediction
                 stop_targets = stop_targets.view(text_input.shape[0],
@@ -157,6 +158,6 @@ if __name__ == '__main__':
 
                 for i, alignment in enumerate(alignments):
                     alignment = alignment.data.cpu().numpy()
-                    plot_alignment(os.path.join(plot_folder, 'alignment-{}.png'.format(num_iter * c.batch_size + i)), alignment)
-                    duration = get_duration(alignment.T)
-                    np.save(os.path.join(duration_folder, 'duration-{}.npy'.format(num_iter * c.batch_size + i)), duration)
+                    plot_alignment(os.path.join(plot_folder, 'alignment-{}.png'.format(idxs[i]), alignment)
+                    duration = get_duration(alignment.T) * c.r
+                    np.save(os.path.join(duration_folder, 'duration-{}.npy'.format(idxs[i])), duration)

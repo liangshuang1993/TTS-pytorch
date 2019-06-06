@@ -122,7 +122,7 @@ class MyDataset(Dataset):
         else: 
             text = np.asarray(
                 text_to_sequence(text, [self.cleaners]), dtype=np.int32)
-        sample = {'text': text, 'wav': wav, 'item_idx': self.items[idx][1], 'mel':mel, 'linear': linear}
+        sample = {'text': text, 'wav': wav, 'item_idx': os.path.basename(self.items[idx][1]).split('.')[0], 'mel':mel, 'linear': linear}
         return sample
 
     def sort_items(self):
