@@ -160,4 +160,5 @@ if __name__ == '__main__':
                     alignment = alignment.data.cpu().numpy()
                     plot_alignment(os.path.join(plot_folder, 'alignment-{}.png'.format(idxs[i]), alignment)
                     duration = get_duration(alignment.T) * c.r
+                    assert (duration.sum() == mel_input.shape[1])
                     np.save(os.path.join(duration_folder, 'duration-{}.npy'.format(idxs[i])), duration)
