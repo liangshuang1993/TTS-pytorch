@@ -59,7 +59,9 @@ def get_duration(alignment):
     max_index = np.argmax(alignment, axis=0)
     # print(max_index.shape) # max_index's length should be alignment.shape[0]
 
-    for index in max_index:
+    for i, index in enumerate(max_index):
+        if i > 0 and index < max_index[i-1]:
+            index = max_index[i-1]
         d[index] += 1
     
     return d
@@ -124,7 +126,7 @@ if __name__ == '__main__':
     with torch.no_grad():
         if data_loader is not None:
             for num_iter, data in enumerate(data_loader):
-                print(num_iter)
+                # print(num_iter * batch_size)
                 start_time = time.time()
 
                 # setup input data
