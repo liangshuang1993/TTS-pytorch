@@ -100,7 +100,8 @@ class LocationSensitiveAttention(nn.Module):
 
 
 class AttentionRNNCell(nn.Module):
-    def __init__(self, out_dim, rnn_dim, annot_dim, memory_dim, align_model, windowing=False):
+    def __init__(self, out_dim, rnn_dim, annot_dim, memory_dim, align_model, 
+                 windowing=False, forward_attention=False):
         r"""
         General Attention RNN wrapper
 
@@ -117,6 +118,7 @@ class AttentionRNNCell(nn.Module):
         self.align_model = align_model
         self.rnn_cell = nn.GRUCell(annot_dim + memory_dim, rnn_dim)
         self.windowing = windowing
+        self.forward_attention = forward_attention
         if self.windowing:
             self.win_back = 3
             self.win_front = 6
@@ -133,7 +135,7 @@ class AttentionRNNCell(nn.Module):
                 'b' (Bahdanau) or 'ls' (Location Sensitive).".format(
                 align_model))
 
-    def forward(self, memory, context, rnn_state, annots, atten, mask, t):
+    def forward(self, memory, context, rnn_state, annots, atten, mask, t, alpha):
         """
         Shapes:
             - memory: (batch, 1, dim) or (batch, dim)
@@ -173,6 +175,15 @@ class AttentionRNNCell(nn.Module):
         # alignment = F.softmax(alignment, dim=-1)
         # alignment = 5 * alignment
         alignment = torch.sigmoid(alignment) / torch.sigmoid(alignment).sum(dim=1).unsqueeze(1)
+        
+        # forward attention
+        if self.forward_attention:
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")            
+            previous_alpha = torch.cat((torch.zeros(alpha.shape[0], 1).to(device), alpha[:, :-1]), 1)
+            alpha = (alpha + previous_alpha).mul(alignment)
+            # clip to prevent gradient exposure
+            alpha = torch.clamp(alpha, 1e-6, 1)
+            alignment = alpha / alpha.sum(dim=1).unsqueeze(1)
         # Attention context vector
         # (batch, 1, dim)
         # c_i = \sum_{j=1}^{T_x} \alpha_{ij} h_j

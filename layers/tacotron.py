@@ -301,7 +301,7 @@ class Decoder(nn.Module):
         memory_size (int): size of the past window. if <= 0 memory_size = r
     """
 
-    def __init__(self, in_features, memory_dim, r, memory_size, attn_windowing):
+    def __init__(self, in_features, memory_dim, r, memory_size, attn_windowing, forward_attention):
         super(Decoder, self).__init__()
         self.r = r
         self.in_features = in_features
@@ -317,7 +317,8 @@ class Decoder(nn.Module):
             annot_dim=in_features,
             memory_dim=128,
             align_model='ls',
-            windowing=attn_windowing)
+            windowing=attn_windowing,
+            forward_attention=forward_attention)
         # (processed_memory | attention context) -> |Linear| -> decoder_RNN_input
         self.project_to_decoder_in = nn.Linear(256 + in_features, 256)
         # decoder_RNN_input -> |RNN| -> RNN_state
@@ -364,6 +365,12 @@ class Decoder(nn.Module):
 
         # decoder states
         attention_rnn_hidden = self.attention_rnn_init(inputs.data.new_zeros(B).long())
+        if self.forward_attention:
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            alpha = torch.zeros(B, T).float().to(device)
+            alpha[:,0] = 1
+        else:
+            alpha = None
         decoder_rnn_hiddens = [
             self.decoder_rnn_inits(inputs.data.new_tensor([idx]*B).long())
             for idx in range(len(self.decoder_rnns))
@@ -373,7 +380,7 @@ class Decoder(nn.Module):
         attention = inputs.data.new(B, T).zero_()
         attention_cum = inputs.data.new(B, T).zero_()
         return (initial_memory, attention_rnn_hidden, decoder_rnn_hiddens, 
-            current_context_vec, attention, attention_cum)
+            current_context_vec, attention, attention_cum, alpha)
 
     def forward(self, inputs, memory=None, mask=None):
         """
@@ -403,7 +410,7 @@ class Decoder(nn.Module):
         stop_tokens = []
         t = 0
         memory_input, attention_rnn_hidden, decoder_rnn_hiddens,\
-            current_context_vec, attention, attention_cum = self._init_states(inputs)
+            current_context_vec, attention, attention_cum, alpha = self._init_states(inputs)
         while True:
             if t > 0:
                 if memory is None:
@@ -422,7 +429,8 @@ class Decoder(nn.Module):
                 (attention.unsqueeze(1), attention_cum.unsqueeze(1)), dim=1)
             attention_rnn_hidden, current_context_vec, attention = self.attention_rnn(
                 processed_memory, current_context_vec, attention_rnn_hidden,
-                inputs, attention_cat, mask, t)
+                inputs, attention_cat, mask, t, alpha)
+            alpha = attention
             del attention_cat
             attention_cum += attention
             # Concat RNN output and attention context vector
