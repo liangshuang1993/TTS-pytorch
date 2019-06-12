@@ -181,10 +181,8 @@ class AttentionRNNCell(nn.Module):
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")            
             previous_alpha = torch.cat((torch.zeros(alpha.shape[0], 1).to(device), alpha[:, :-1]), 1)
             alpha = (alpha + previous_alpha).mul(alignment)
-            # if mask is not None:
-            #     alpha.masked_fill_(1 - mask, 0)
-            #     alignment = alpha / alpha.masked_fill_(1 - mask, 0).sum(dim=1).unsqueeze(1)
-            # else:
+            # clip to prevent gradient exposure
+            alpha = torch.clamp(alpha, 1e-6, 1)
             alignment = alpha / alpha.sum(dim=1).unsqueeze(1)
         # Attention context vector
         # (batch, 1, dim)
